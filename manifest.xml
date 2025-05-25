@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<OfficeApp xmlns="http://schemas.microsoft.com/office/appforoffice/1.1" 
+           xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+           xmlns:bt="http://schemas.microsoft.com/office/officeappbasictypes/1.0" 
+           xmlns:ov="http://schemas.microsoft.com/office/taskpaneappversionoverrides" 
+           xsi:type="TaskPaneApp">
+
+  <!-- Basic Add-in Information -->
+  <Id>tfl-network-analysis-addin</Id>
+  <Version>1.0.0.0</Version>
+  <ProviderName>TFL Analytics</ProviderName>
+  <DefaultLocale>en-US</DefaultLocale>
+  
+  <!-- Add-in Display Information -->
+  <DisplayName DefaultValue="TFL Network Analysis" />
+  <Description DefaultValue="Comprehensive fuel sales network analysis tool with dramatic drop detection and recovery tracking" />
+  <IconUrl DefaultValue="https://msschae.github.io/tfl-excel-addin/assets/icon-32.png"/>
+  <HighResolutionIconUrl DefaultValue="https://msschae.github.io/tfl-excel-addin/assets/icon-64.png"/>
+  <SupportUrl DefaultValue="https://msschae.github.io/tfl-excel-addin" />
+  
+  <!-- Supported Office Applications -->
+  <Hosts>
+    <Host Name="Workbook" />
+  </Hosts>
+  
+  <!-- Default Settings -->
+  <DefaultSettings>
+    <SourceLocation DefaultValue="https://msschae.github.io/tfl-excel-addin/tfl-analysis.html"/>
+  </DefaultSettings>
+  
+  <!-- Permissions -->
+  <Permissions>ReadWriteDocument</Permissions>
+  
+  <!-- Version Overrides -->
+  <VersionOverrides xmlns="http://schemas.microsoft.com/office/taskpaneappversionoverrides" xsi:type="VersionOverridesV1_0">
+    <Hosts>
+      <Host xsi:type="Workbook">
+        
+        <!-- Ribbon Integration -->
+        <DesktopFormFactor>
+          <GetStarted>
+            <Title resid="GetStarted.Title"/>
+            <Description resid="GetStarted.Description"/>
+            <LearnMoreUrl resid="GetStarted.LearnMoreUrl"/>
+          </GetStarted>
+          
+          <FunctionFile resid="Commands.Url" />
+          
+          <ExtensionPoint xsi:type="PrimaryCommandSurface">
+            <OfficeTab id="TabHome">
+              <Group id="TFLAnalysisGroup">
+                <Label resid="TFLAnalysisGroup.Label" />
+                <Icon>
+                  <bt:Image size="16" resid="Icon.16x16"/>
+                  <bt:Image size="32" resid="Icon.32x32"/>
+                  <bt:Image size="80" resid="Icon.80x80"/>
+                </Icon>
+                
+                <!-- Open Analysis Panel Button -->
+                <Control xsi:type="Button" id="OpenAnalysisPanel">
+                  <Label resid="OpenAnalysisPanel.Label" />
+                  <Supertip>
+                    <Title resid="OpenAnalysisPanel.Label" />
+                    <Description resid="OpenAnalysisPanel.Tooltip" />
+                  </Supertip>
+                  <Icon>
+                    <bt:Image size="16" resid="Icon.16x16"/>
+                    <bt:Image size="32" resid="Icon.32x32"/>
+                    <bt:Image size="80" resid="Icon.80x80"/>
+                  </Icon>
+                  <Action xsi:type="ShowTaskpane">
+                    <TaskpaneId>ButtonId1</TaskpaneId>
+                    <SourceLocation resid="Taskpane.Url"/>
+                  </Action>
+                </Control>
+                
+                <!-- Quick Analysis Button -->
+                <Control xsi:type="Button" id="QuickAnalysis">
+                  <Label resid="QuickAnalysis.Label" />
+                  <Supertip>
+                    <Title resid="QuickAnalysis.Label" />
+                    <Description resid="QuickAnalysis.Tooltip" />
+                  </Supertip>
+                  <Icon>
+                    <bt:Image size="16" resid="Icon.16x16"/>
+                    <bt:Image size="32" resid="Icon.32x32"/>
+                    <bt:Image size="80" resid="Icon.80x80"/>
+                  </Icon>
+                  <Action xsi:type="ExecuteFunction">
+                    <FunctionName>runQuickAnalysis</FunctionName>
+                  </Action>
+                </Control>
+                
+              </Group>
+            </OfficeTab>
+          </ExtensionPoint>
+        </DesktopFormFactor>
+      </Host>
+    </Hosts>
+    
+    <!-- Resources -->
+    <Resources>
+      <bt:Images>
+        <bt:Image id="Icon.16x16" DefaultValue="https://msschae.github.io/tfl-excel-addin/assets/icon-16.png"/>
+        <bt:Image id="Icon.32x32" DefaultValue="https://msschae.github.io/tfl-excel-addin/assets/icon-32.png"/>
+        <bt:Image id="Icon.80x80" DefaultValue="https://msschae.github.io/tfl-excel-addin/assets/icon-80.png"/>
+      </bt:Images>
+      <bt:Urls>
+        <bt:Url id="GetStarted.LearnMoreUrl" DefaultValue="https://msschae.github.io/tfl-excel-addin"/>
+        <bt:Url id="Commands.Url" DefaultValue="https://msschae.github.io/tfl-excel-addin/commands.html"/>
+        <bt:Url id="Taskpane.Url" DefaultValue="https://msschae.github.io/tfl-excel-addin/tfl-analysis.html"/>
+      </bt:Urls>
+      <bt:ShortStrings>
+        <bt:String id="GetStarted.Title" DefaultValue="TFL Network Analysis"/>
+        <bt:String id="TFLAnalysisGroup.Label" DefaultValue="TFL Analytics"/>
+        <bt:String id="OpenAnalysisPanel.Label" DefaultValue="Network Analysis"/>
+        <bt:String id="QuickAnalysis.Label" DefaultValue="Quick Analysis"/>
+      </bt:ShortStrings>
+      <bt:LongStrings>
+        <bt:String id="GetStarted.Description" DefaultValue="Analyze your fuel sales network performance with advanced analytics"/>
+        <bt:String id="OpenAnalysisPanel.Tooltip" DefaultValue="Open the comprehensive network analysis panel"/>
+        <bt:String id="QuickAnalysis.Tooltip" DefaultValue="Run a quick analysis on the current data"/>
+      </bt:LongStrings>
+    </Resources>
+  </VersionOverrides>
+</OfficeApp>
