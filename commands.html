@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>TFL Commands</title>
+    <script src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"></script>
+</head>
+<body>
+    <script>
+        Office.onReady(() => {
+            console.log('TFL Commands loaded');
+        });
+
+        // Quick Analysis Function for Ribbon Button
+        function runQuickAnalysis() {
+            Excel.run(async (context) => {
+                try {
+                    const worksheet = context.workbook.worksheets.getActiveWorksheet();
+                    const usedRange = worksheet.getUsedRange();
+                    usedRange.load(['values', 'rowCount']);
+                    
+                    await context.sync();
+                    
+                    // Quick analysis logic
+                    const values = usedRange.values;
+                    let storeCount = 0;
+                    let totalVolume = 0;
+                    
+                    // Count stores and sum volumes
+                    for (let i = 0; i < values.length; i++) {
+                        const row = values[i];
+                        if (row && row[0] && typeof row[0] === 'string' && row[0].includes('DUNS#')) {
+                            storeCount++;
+                        }
+                        
+                        // Sum column O (index 14) if it's a number
+                        if (row && row[14] && !isNaN(parseFloat(row[14]))) {
+                            const value = typeof row[14] === 'string' ? 
+                                parseFloat(row[14].replace(/,/g, '')) : 
+                                parseFloat(row[14]);
+                            totalVolume += value;
+                        }
+                    }
+                    
+                    // Create a new worksheet for results
+                    const newSheet = context.workbook.worksheets.add('TFL Quick Analysis');
+                    
+                    const summaryData = [
+                        ['TFL Quick Analysis Results', ''],
+                        ['Date:', new Date().toLocaleDateString()],
+                        ['Time:', new Date().toLocaleTimeString()],
+                        ['Stores Found:', storeCount],
+                        ['Total Volume (gallons):', totalVolume.toLocaleString()],
+                        ['Average per Store:', storeCount > 0 ? Math.round(totalVolume / storeCount).toLocaleString() : '0']
+                    ];
+                    
+                    const range = newSheet.getRange('A1:B6');
+                    range.values = summaryData;
+                    range.format.autofitColumns();
+                    
+                    // Format header
+                    newSheet.getRange('A1:B1').format.font.bold = true;
+                    newSheet.getRange('A1:B1').format.font.size = 14;
+                    newSheet.getRange('A1:B1').format.fill.color = '#4472C4';
+                    newSheet.getRange('A1:B1').format.font.color = 'white';
+                    
+                    // Format data rows
+                    newSheet.getRange('A2:A6').format.font.bold = true;
+                    
+                    await context.sync();
+                    
+                    // Show success message
+                    alert(`Quick Analysis Complete!\n\n` +
+                          `✅ ${storeCount} stores analyzed\n` +
+                          `📊 ${totalVolume.toLocaleString()} total gallons\n` +
+                          `📈 Results saved to new worksheet`);
+                    
+                } catch (error) {
+                    console.error('Quick analysis error:', error);
+                    alert('Quick analysis failed: ' + error.message);
+                }
+            });
+        }
+
+        // Enhanced Store Summary Function
+        function createStoreSummary() {
+            Excel.run(async (context) => {
+                try {
+                    const worksheet = context.workbook.worksheets.getActiveWorksheet();
+                    const usedRange = worksheet.getUsedRange();
+                    usedRange.load(['values', 'rowCount']);
+                    
+                    await context.sync();
+                    
+                    const values = usedRange.values;
+                    const storeData = [];
+                    
+                    // Find all stores and their latest data
+                    for (let i = 0; i < values.length; i++) {
+                        const row = values[i];
+                        if (row && row[0] && typeof row[0] === 'string' && row[0].includes('DUNS#')) {
+                            const storeName = row[0].replace(' DUNS#', '').trim();
+                            
+                            // Look for the most recent year's data for this store
+                            let latestVolume = 0;
+                            let latestYear = 0;
+                            
+                            for (let j = i + 1; j < Math.min(i + 20, values.length); j++) {
+                                const dataRow = values[j];
+                                if (dataRow && dataRow[1] && !isNaN(parseInt(dataRow[1]))) {
+                                    const year = parseInt(dataRow[1]);
+                                    if (dataRow[14] && dataRow[14] !== ' ') {
+                                        const volume = typeof dataRow[14] === 'string' ? 
+                                            parseInt(dataRow[14].replace(/,/g, '')) : 
+                                            parseInt(dataRow[14]);
+                                        
+                                        if (!isNaN(volume) && year > latestYear) {
+                                            latestYear = year;
+                                            latestVolume = volume;
+                                        }
+                                    }
+                                }
+                                
+                                // Stop if we hit another store
+                                if (dataRow && dataRow[0] && typeof dataRow[0] === 'string' && dataRow[0].includes('DUNS#')) {
+                                    break;
+                                }
+                            }
+                            
+                            if (latestYear > 0) {
+                                storeData.push({
+                                    name: storeName,
+                                    year: latestYear,
+                                    volume: latestVolume
+                                });
+                            }
+                        }
+                    }
+                    
+                    // Sort stores by volume (highest first)
+                    storeData.sort((a, b) => b.volume - a.volume);
+                    
+                    // Create summary worksheet
+                    const summarySheet = context.workbook.worksheets.add('TFL Store Summary');
+                    
+                    // Headers
+                    const headers = [['Store Name', 'Latest Year', 'Volume (Gallons)', 'Performance Rank']];
+                    const headerRange = summarySheet.getRange('A1:D1');
+                    headerRange.values = headers;
+                    headerRange.format.font.bold = true;
+                    headerRange.format.fill.color = '#4472C4';
+                    headerRange.format.font.color = 'white';
+                    
+                    // Data
+                    const summaryData = storeData.map((store, index) => [
+                        store.name,
+                        store.year,
+                        store.volume.toLocaleString(),
+                        `#${index + 1}`
+                    ]);
+                    
+                    if (summaryData.length > 0) {
+                        const dataRange = summarySheet.getRange(`A2:D${summaryData.length + 1}`);
+                        dataRange.values = summaryData;
+                    }
+                    
+                    // Auto-fit columns
+                    summarySheet.getUsedRange().format.autofitColumns();
+                    
+                    await context.sync();
+                    
+                    alert(`Store Summary Created!\n\n` +
+                          `📊 ${storeData.length} stores ranked by performance\n` +
+                          `🏆 Top performer: ${storeData[0]?.name || 'N/A'}\n` +
+                          `📈 Results saved to "TFL Store Summary" worksheet`);
+                    
+                } catch (error) {
+                    console.error('Store summary error:', error);
+                    alert('Store summary failed: ' + error.message);
+                }
+            });
+        }
+
+        // Network Health Check Function
+        function networkHealthCheck() {
+            Excel.run(async (context) => {
+                try {
+                    const worksheet = context.workbook.worksheets.getActiveWorksheet();
+                    const usedRange = worksheet.getUsedRange();
+                    usedRange.load(['values', 'rowCount']);
+                    
+                    await context.sync();
+                    
+                    const values = usedRange.values;
+                    let totalStores = 0;
+                    let storesWithRecentData = 0;
+                    let totalVolume2024 = 0;
+                    let issuesFound = [];
+                    
+                    // Analyze network health
+                    for (let i = 0; i < values.length; i++) {
+                        const row = values[i];
+                        if (row && row[0] && typeof row[0] === 'string' && row[0].includes('DUNS#')) {
+                            totalStores++;
+                            const storeName = row[0].replace(' DUNS#', '').trim();
+                            
+                            let has2024Data = false;
+                            let volume2024 = 0;
+                            
+                            // Check for 2024 data
+                            for (let j = i + 1; j < Math.min(i + 20, values.length); j++) {
+                                const dataRow = values[j];
+                                if (dataRow && dataRow[1] === 2024 || dataRow && dataRow[1] === '2024') {
+                                    has2024Data = true;
+                                    if (dataRow[14] && dataRow[14] !== ' ') {
+                                        volume2024 = typeof dataRow[14] === 'string' ? 
+                                            parseInt(dataRow[14].replace(/,/g, '')) : 
+                                            parseInt(dataRow[14]);
+                                        totalVolume2024 += volume2024 || 0;
+                                    }
+                                    break;
+                                }
+                                
+                                if (dataRow && dataRow[0] && typeof dataRow[0] === 'string' && dataRow[0].includes('DUNS#')) {
+                                    break;
+                                }
+                            }
+                            
+                            if (has2024Data) {
+                                storesWithRecentData++;
+                                
+                                // Flag potential issues
+                                if (volume2024 < 100000) {
+                                    issuesFound.push(`${storeName}: Low volume (${volume2024?.toLocaleString() || 0} gal)`);
+                                }
+                            } else {
+                                issuesFound.push(`${storeName}: No 2024 data found`);
+                            }
+                        }
+                    }
+                    
+                    // Create health check worksheet
+                    const healthSheet = context.workbook.worksheets.add('TFL Network Health');
+                    
+                    const healthData = [
+                        ['TFL Network Health Check', ''],
+                        ['Report Date:', new Date().toLocaleDateString()],
+                        ['', ''],
+                        ['NETWORK OVERVIEW', ''],
+                        ['Total Stores:', totalStores],
+                        ['Stores with 2024 Data:', storesWithRecentData],
+                        ['Data Coverage:', `${Math.round((storesWithRecentData / totalStores) * 100)}%`],
+                        ['Total 2024 Volume:', `${totalVolume2024.toLocaleString()} gallons`],
+                        ['Average per Store:', `${Math.round(totalVolume2024 / storesWithRecentData).toLocaleString()} gallons`],
+                        ['', ''],
+                        ['ISSUES IDENTIFIED', ''],
+                        ...issuesFound.slice(0, 10).map(issue => [issue, ''])
+                    ];
+                    
+                    const range = healthSheet.getRange(`A1:B${healthData.length}`);
+                    range.values = healthData;
+                    
+                    // Format headers
+                    healthSheet.getRange('A1:B1').format.font.bold = true;
+                    healthSheet.getRange('A1:B1').format.font.size = 16;
+                    healthSheet.getRange('A4:B4').format.font.bold = true;
+                    healthSheet.getRange('A11:B11').format.font.bold = true;
+                    
+                    range.format.autofitColumns();
+                    
+                    await context.sync();
+                    
+                    alert(`Network Health Check Complete!\n\n` +
+                          `🏪 ${totalStores} total stores\n` +
+                          `📊 ${storesWithRecentData} with current data\n` +
+                          `⚠️ ${issuesFound.length} issues identified\n` +
+                          `📈 Results saved to worksheet`);
+                    
+                } catch (error) {
+                    console.error('Health check error:', error);
+                    alert('Health check failed: ' + error.message);
+                }
+            });
+        }
+
+        // Make functions globally available
+        window.runQuickAnalysis = runQuickAnalysis;
+        window.createStoreSummary = createStoreSummary;
+        window.networkHealthCheck = networkHealthCheck;
+    </script>
+</body>
+</html>
